@@ -1,0 +1,42 @@
+- pipeline: id_yaml
+  name: Deploy to production
+  refs:
+  - :default
+  - refs/heads/Mistr
+  events:
+  - type: PUSH
+  terminate_stale_runs: true
+  fail_on_prepare_env_warning: true
+  concurrent_pipeline_runs: true
+  resources: MEDIUM
+  actions:
+  - action: msbuild
+    type: NATIVE_BUILD_WINDOWS
+    commands:
+    - nuget restore
+    - msbuild
+    sync_paths:
+    - pipeline_path: /
+      vm_path: c:\buddy
+      direction: PIPELINE_TO_VM
+    - pipeline_path: ""
+      vm_path: ""
+      direction: VM_TO_PIPELINE
+    - pipeline_path: /
+      vm_path: c:\buddy
+      direction: VM_TO_PIPELINE
+    instance_type: GENERAL_XLARGE
+  - action: npm test
+    type: BUILD
+    docker_image_name: library/node
+    docker_image_tag: 22
+    execute_commands:
+    - "# yarn install"
+    - npm install
+    - npm test
+    services:
+    - type: SELENIUM_CHROME
+      connection:
+        host: selenium-ch
+    volume_mappings:
+    - /:/buddy/index-html
